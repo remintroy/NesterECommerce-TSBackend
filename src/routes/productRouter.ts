@@ -3,7 +3,7 @@ import { getProudctById } from "../services/products.js";
 
 const app = express.Router();
 
-app.get("/product/:pid", async (req, res) => {
+app.get("/:pid", async (req, res) => {
   try {
     const data = await getProudctById(req?.params?.pid); 
     res.send({ ...data["_doc"], rating: Math.floor(Math.random() * 6) });

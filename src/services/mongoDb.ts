@@ -33,24 +33,12 @@ export const users = db.model(
     phoneVerified: { type: Boolean, default: false },
     emailVerified: { type: Boolean, default: false },
     payment: Object,
-    preferences: {
-      type: Object,
-      default: {
-        languages: [],
-        subjects: [],
-        knowlageLevel: Number,
-        difficulty: {
-          type: Number,
-          default: 0,
-        },
-      },
-    },
   })
 );
 
 // products
 const productsSchema = new mongoose.Schema({
-  PID: String,
+  pid: String,
   title: String,
   description: String,
   category: String,
@@ -80,3 +68,41 @@ const productsSchema = new mongoose.Schema({
 productsSchema.plugin(mongoosePaginator);
 
 export const products = db.model("products", productsSchema);
+
+// to save refresh tokens
+export const refreshTokens = db.model(
+  "refreshTokens",
+  new mongoose.Schema({
+    value: String,
+    uid: String,
+    createdAt: {
+      type: Date,
+      default: new Date(),
+    },
+  })
+);
+
+export const cart = db.model(
+  "cart",
+  new mongoose.Schema({
+    uid: String,
+    products: [
+      {
+        pid: String,
+        quantity: {
+          type: Number,
+          default: 1,
+        },
+        updated: {
+          type: Date,
+          default: new Date(),
+        },
+        status: {
+          type: String,
+          default: "cart",
+        },
+        orderID: String,
+      },
+    ],
+  })
+);

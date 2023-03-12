@@ -3,13 +3,13 @@ import * as db from "./mongoDb.js";
 export const getProudctById = async (pid: string) => {
   try {
     return await db.products.findOne(
-      { PID: pid },
+      { pid: pid },
       {
         _id: 0,
         title: 1,
         description: 1,
         price: 1,
-        PID: 1,
+        pid: 1,
         offer: 1,
         stock: 1,
         category: 1,
