@@ -33,7 +33,7 @@ export const getNewAccessToken = async (req: RequestDefention, res: Response) =>
     const data = await auth.getNewAccessTokenFromRefreshToken(refreshToken);
     res.send(data);
   } catch (error) {
-    res.send(error?.status ? error.status : 401);
+    res.status(error?.status ? error.status : 401);
     res.send(error);
   }
 };
