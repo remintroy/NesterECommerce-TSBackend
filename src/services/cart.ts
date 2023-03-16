@@ -90,7 +90,10 @@ export const add = async ({ uid, pid, quantity }) => {
           operation = "E-Quantity updated";
         }
       }
-      // TODO: Response calculations;
+      const cartTotal = await getCartTotal({ uid: uid });
+      responseData.productCount = cartTotal.length;
+      responseData.totalPrice = cartTotal[0].subTotal;
+      responseData.totalQuantity = cartTotal[0].totalCount;
     } else {
       // create new cart document
       try {
@@ -110,10 +113,99 @@ export const add = async ({ uid, pid, quantity }) => {
         throw createError(500, "Error while adding to cart");
       }
     }
-
+    //...
     return { status: operation.split("-")[0], message: operation.split("-")[1], data: responseData };
   } catch (error) {
-    console.log(error);
     throw error;
+  }
+};
+
+const getCartTotal = async ({ uid, includeProductData = false }: { uid: string; includeProductData?: boolean }) => {
+  try {
+    const products = await db.cart.aggregate([
+      { $match: { uid: uid } },
+      { $unwind: "$products" },
+      { $sort: { "products.updated": -1 } },
+      {
+        $lookup: {
+          from: "products",
+          localField: "products.pid",
+          foreignField: "pid",
+          as: "cartProducts",
+        },
+      },
+      {
+        $addFields: {
+          "cartProducts.quantity": "$$ROOT.products.quantity",
+          "cartProducts.updated": "$$ROOT.products.updated",
+          "cartProducts.total": {
+            $multiply: [
+              "$$ROOT.products.quantity",
+              {
+                $subtract: [
+                  { $arrayElemAt: ["$$ROOT.cartProducts.price", 0] },
+                  { $arrayElemAt: ["$$ROOT.cartProducts.offer", 0] },
+                ],
+              },
+            ],
+          },
+        },
+      },
+      {
+        $group: {
+          _id: "$products.pid",
+          product: { $push: { $arrayElemAt: ["$cartProducts", 0] } },
+        },
+      },
+      {
+        $match: {
+          "product.pid": {
+            $exists: true,
+            $ne: null,
+          },
+        },
+      },
+      {
+        $group: {
+          _id: { $arrayElemAt: ["$product.pid", 0] },
+          product: { $push: { $arrayElemAt: ["$product", 0] } },
+        },
+      },
+      { $project: { product: { $arrayElemAt: ["$product", 0] } } },
+      { $replaceRoot: { newRoot: "$product" } },
+      {
+        $group: {
+          _id: "subTotal",
+          subTotal: { $sum: "$total" },
+          products: { $addToSet: "$$ROOT" },
+          quantity: { $sum: "$quantity" },
+        },
+      },
+      {
+        $addFields: {
+          "products.subTotal": "$subTotal",
+          "products.totalCount": "$quantity",
+        },
+      },
+      { $unwind: "$products" },
+      { $replaceRoot: { newRoot: "$products" } },
+      {
+        $project: {
+          _id: 0,
+          views: 0,
+          reachedCheckout: 0,
+          interactions: 0,
+          impressions: 0,
+          addedToCart: 0,
+          purchased: 0,
+          productsListingViews: 0,
+          cancelled: 0,
+          purchaseCompleted: 0,
+        },
+      },
+    ]);
+    return products;
+  } catch (error) {
+    throw createError(500, "Faild to fetch cart data");
   }
 };
