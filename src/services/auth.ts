@@ -49,7 +49,21 @@ export const getNewAccessTokenFromRefreshToken = async (refreshToken: string) =>
     // checks for user accessess
     await userAccessChecks(payload?.uid);
     try {
-      return newAccessToken(payload);
+      const accessToken = newAccessToken(payload);
+      try {
+        await db.users.updateOne(
+          { uid: payload?.uid },
+          {
+            $set: {
+              lastRefresh: new Date(),
+            },
+          }
+        );
+      } catch (error) {
+        // Error occured while updating last refresh time
+        console.log(error);
+      }
+      return accessToken;
     } catch (error) {
       throw createError(500, "Faild to create token");
     }
@@ -181,7 +195,13 @@ export const getUserData = async ({ refreshToken }) => {
     // get new access token
     const accessToken = newAccessToken({ uid: tokenPayload?.uid });
     //...
-    return { email: userData?.email, name: userData?.name, photoURL: userData?.photoURL, accessToken };
+    return {
+      email: userData?.email,
+      name: userData?.name,
+      photoURL: userData?.photoURL,
+      phone: userData?.phone,
+      accessToken,
+    };
   } catch (error) {
     throw error;
   }
