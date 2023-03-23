@@ -37,3 +37,16 @@ export const getNewAccessToken = async (req: RequestDefention, res: Response) =>
     res.send(error);
   }
 };
+
+export const updateUserData = async (req: RequestDefention, res: Response) => {
+  try {
+    const uid = req.user?.uid;
+    if (!uid) throw createError(400, "Uid is required");
+    const data = req.body;
+    const response = await auth.updateUserData(uid, data);
+    res.send(response);
+  } catch (error) {
+    res.status(error?.code ? error.code : 401);
+    res.send(error);
+  }
+};

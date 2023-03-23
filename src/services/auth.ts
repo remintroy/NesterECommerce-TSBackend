@@ -82,7 +82,7 @@ export const userAccessChecks = async (uid: string) => {
       throw createError(500, "Oops something went wrong, Try after some time");
     }
     if (!userData) throw createError(400, "Can't find user account with given data");
-    if (userData.disabled) throw createError(401, "Disabled User");
+    if (userData.disabled) throw createError(403, "Disabled User");
   } catch (error) {
     throw error;
   }
@@ -96,7 +96,7 @@ export const authInit = async (req: RequestDefention, res: Response, next: NextF
     // gets curresponding user data from server if user exist's
     req.user = await db.users.findOne({ uid: payload?.uid }, { password: 0, _id: 0 });
     // check for blocked user
-    if (req.user.disabled) throw "This user is blocked user";
+    if (req.user.disabled) throw "This user is disabled";
     // check if this is an admin account
     if (req.user?.admin) req.admin = req.user;
   } catch (error) {
@@ -194,14 +194,65 @@ export const getUserData = async ({ refreshToken }) => {
     let userData: any = await userAccessChecks(tokenPayload?.uid);
     // get new access token
     const accessToken = newAccessToken({ uid: tokenPayload?.uid });
-    //...
+    //... 
     return {
+      uid: userData.uid,
       email: userData?.email,
       name: userData?.name,
       photoURL: userData?.photoURL,
       phone: userData?.phone,
+      referal: userData?.referal,
+      lastLogin: userData?.lastLogin,
       accessToken,
     };
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const updateUserData = async (uid: string, data: { name: string; photoURL: string; phone: string }) => {
+  try {
+    await userAccessChecks(uid);
+
+    if (data?.name) {
+      if (typeof data.name != "string") throw createError(400, "Enter a valid name");
+      data.name = data.name?.trim();
+      if (data.name.length < 1) throw createError(400, "Invalid name");
+    }
+
+    if (data?.photoURL) {
+      if (typeof data.photoURL != "string") throw createError(400, "Invalid ImgURL");
+      data.photoURL = data.photoURL?.trim();
+      if (!validator.default.isURL(data.photoURL)) throw createError(400, "Invalid URL");
+    }
+
+    if (data?.phone) {
+      if (!validator.default.isMobilePhone(data?.phone)) throw createError(400, "Invalid phone number");
+      data.phone = data?.phone?.trim();
+    }
+
+    let dataToBeUpdated: { name: string; photoURL: string; phone: string } = {
+      name: undefined,
+      photoURL: undefined,
+      phone: undefined,
+    };
+
+    if (data.name) dataToBeUpdated.name = data.name;
+    if (data.photoURL) dataToBeUpdated.photoURL = data.photoURL;
+    if (data.phone) dataToBeUpdated.phone = data.phone;
+
+    try {
+      await db.users.updateOne(
+        { uid },
+        {
+          $set: dataToBeUpdated,
+        }
+      );
+
+      return { message: "user data updated successfully" };
+    } catch (error) {
+      throw createError(500, "Error while updating user data");
+    }
   } catch (error) {
     throw error;
   }
