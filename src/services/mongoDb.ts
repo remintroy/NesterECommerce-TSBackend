@@ -105,3 +105,55 @@ export const cart = db.model(
     ],
   })
 );
+
+// orderes
+const ordersSchema = new mongoose.Schema({
+  uid: String,
+  orders: [
+    {
+      orderID: String,
+      products: Array,
+      address: Object,
+      trackingID: String,
+      couponCode: String,
+      total: {
+        type: Number,
+        default: 0,
+      },
+      status: {
+        type: String,
+        default: "pending",
+      },
+      paymentType: String,
+      paymentDate: {
+        type: Date,
+        default: new Date(),
+      },
+      paymentError: Object,
+      paymentDetails: Object,
+      statusUpdate: {
+        a: { status: String, date: Date },
+        b: { status: String, date: Date },
+        c: { status: String, date: Date },
+        d: { status: String, date: Date },
+        e: { status: String, date: Date },
+      },
+      update: {
+        type: Date,
+        default: new Date(),
+      },
+      paymentStatus: {
+        type: String,
+        default: "pending",
+      },
+      dateOFOrder: {
+        type: Date,
+        default: new Date(),
+      },
+    },
+  ],
+});
+
+ordersSchema.plugin(mongoosePaginator);
+
+export const orders = db.model("orders", ordersSchema);
