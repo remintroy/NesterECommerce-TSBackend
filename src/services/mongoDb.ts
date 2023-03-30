@@ -7,7 +7,7 @@ dotenv.config();
 const dbLatencyLoggerTime = Date.now();
 const dbLatencyLogger = () => console.log(`[-] Database connected in : ${Date.now() - dbLatencyLoggerTime}ms`);
 
-const db = mongoose.createConnection(process.env.USERDB_URL);
+const db = mongoose.createConnection(process.env.MONGODB_URL);
 
 db.on("error", (error) => console.error(error));
 db.once("open", () => dbLatencyLogger());
